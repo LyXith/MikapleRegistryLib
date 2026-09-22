@@ -1,6 +1,7 @@
 package io.mikaple.regfiles;
 
+import io.mikaple.objectinfo.ObjectIdentity;
 import io.mikaple.objectinfo.ObjectInfo;
 
-public record MregFileInfo(String type, String name, ObjectInfo objectInfo) {
+public record MregFileInfo(String type, ObjectInfo objectInfo) {
 }

@@ -6,7 +6,7 @@ import java.util.Map;
 public class ObjectInfo {
     private final Map<String, String> KVMap = new HashMap<>();
     private final Map<String, ObjectInfoValueType> valueTypeMap = new HashMap<>();
-
+    private ObjectIdentity id;
     public ObjectInfo() {
 
     }
@@ -15,6 +15,12 @@ public class ObjectInfo {
         KVMap.put(k,v);
         valueTypeMap.put(v,valueType);
     }
+
+    public void putId(ObjectIdentity id) {
+        if (this.id == null) this.id = id;
+    }
+
+    public ObjectIdentity getId() { return this.id; }
 
     @SuppressWarnings("unchecked")
     public <T> T getValue(String key) {
@@ -35,5 +41,17 @@ public class ObjectInfo {
             case STR -> value;
         };
         return (T) result;
+    }
+
+    public static ObjectInfoValueType getTypeFromString(String string) {
+        return switch (string) {
+            case "bool" -> ObjectInfoValueType.BOOL;
+            case "int" -> ObjectInfoValueType.INT;
+            case "long" -> ObjectInfoValueType.LONG;
+            case "double" -> ObjectInfoValueType.DOUBLE;
+            case "float" -> ObjectInfoValueType.FLOAT;
+            case "str" -> ObjectInfoValueType.STR;
+            default -> throw new IllegalArgumentException("Unexpected type: " + string);
+        };
     }
 }

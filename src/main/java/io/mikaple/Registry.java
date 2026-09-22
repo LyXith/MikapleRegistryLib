@@ -1,5 +1,8 @@
 package io.mikaple;
 
+import io.mikaple.objectinfo.ObjectIdentity;
+import io.mikaple.objectinfo.ObjectInfo;
+
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -7,7 +10,10 @@ import java.util.stream.IntStream;
 public abstract class Registry<T> {
     private final String type;
     private final List<T> entries = new ArrayList<>();
-    private Map<Integer,T> idsMap = Collections.emptyMap();
+    private final Set<T> entryIndex = new HashSet<>();
+    private final Map<T, ObjectInfo> entryInfosMap = new HashMap<>();
+    private final Map<ObjectIdentity, T> entryIdsMap = new HashMap<>();
+    private Map<Integer,T> numIdsMap = Collections.emptyMap();
     private boolean isFrozen = false;
 
     protected Registry(String type) {
@@ -21,9 +27,11 @@ public abstract class Registry<T> {
     protected void onRegister(T entry) {
     }
 
-    public boolean register(T entry) {
+    public boolean register(T entry, ObjectInfo objectInfo) {
         if (isFrozen) return false;
-        if (entry == null || entries.contains(entry) ) return false;
+        if (entry == null || !entryIndex.add(entry)) return false;
+        entryIdsMap.put(objectInfo.getId(), entry);
+        entryInfosMap.put(entry, objectInfo);
         entries.addLast(entry);
         onRegister(entry);
         return true;
@@ -35,7 +43,10 @@ public abstract class Registry<T> {
 
     public boolean unregister(T entry) {
         if (isFrozen) return false;
-        if (entry == null || !entries.contains(entry)) return false;
+        if (entry == null || !entryIndex.contains(entry)) return false;
+        entryIndex.remove(entry);
+        entryIdsMap.remove(entryInfosMap.get(entry).getId());
+        entryInfosMap.remove(entry);
         entries.remove(entry);
         onUnregister(entry);
         return true;
@@ -43,6 +54,14 @@ public abstract class Registry<T> {
 
     public List<T> getEntries() {
         return List.copyOf(entries);
+    }
+
+    public T byId(int i) {
+        return numIdsMap.get(i);
+    }
+
+    public ObjectInfo getObjectInfo(T entry) {
+        return entryInfosMap.get(entry);
     }
 
     public Map<Integer, T> createIdsMap() {
@@ -55,9 +74,9 @@ public abstract class Registry<T> {
                         (a, _) -> a,
                         LinkedHashMap::new
                 ));
-        idsMap = Collections.unmodifiableMap(map);
+        numIdsMap = Collections.unmodifiableMap(map);
         freeze();
-        return idsMap;
+        return numIdsMap;
     }
 
     public boolean syncIdsMap(Map<Integer,T> syncIdsMap) {
@@ -90,13 +109,13 @@ public abstract class Registry<T> {
             nextKey++;
         }
 
-        idsMap = Collections.unmodifiableMap(syncedIdsMap);
+        numIdsMap = Collections.unmodifiableMap(syncedIdsMap);
         freeze();
         return true;
     }
 
-    public Map<Integer,T> getIdsMap() {
-        return idsMap;
+    public Map<Integer,T> getNumIdsMap() {
+        return numIdsMap;
     }
 
     public void unfreeze() {
@@ -121,7 +140,10 @@ public abstract class Registry<T> {
         if (isFrozen) return false;
         onClear();
         entries.clear();
-        idsMap = Collections.emptyMap();
+        entryIndex.clear();
+        entryInfosMap.clear();
+        entryIdsMap.clear();
+        numIdsMap = Collections.emptyMap();
         return true;
     }
 }
